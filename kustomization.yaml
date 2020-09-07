@@ -1,0 +1,22 @@
+configMapGenerator:
+  - name: mysql-config
+    literals:
+      - host=wordpress.cd5wjyuit6df.us-east-2.rds.amazonaws.com
+      - dbname=wordpress
+  - name: mysql-config-efrain
+    literals:
+      - host=efrain.cd5wjyuit6df.us-east-2.rds.amazonaws.com
+      - dbname=efrain
+secretGenerator:
+  - name: mysql-pass
+    literals:
+      - username=admin
+      - password=1234qwerty
+  - name: mysql-pass-efrain
+    literals:
+      - username=admin
+      - password=1234qwerty
+resources:
+  - fpt-deployment.yaml
+  - efrain-deployment.yaml
+  - wordpress-ingress.yaml

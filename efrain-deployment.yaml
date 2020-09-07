@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: efs-pv-efrain
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-sc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-d58000ad:/efrain
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: efs-claim-efrain
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpressefrain
+  labels:
+    app: wordpress
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: wordpressefrain
+    tier: frontend
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: wordpressefrain
+  labels:
+    app: wordpressefrain
+spec:
+  selector:
+    matchLabels:
+      app: wordpressefrain
+      tier: frontend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpressefrain
+        tier: frontend
+    spec:
+      containers:
+      - image: wordpress:5.5.1-php7.2-apache
+        name: wordpressefrain
+        env:
+        - name: WORDPRESS_DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config-efrain
+              key: host
+        - name: WORDPRESS_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-pass-efrain
+              key: username
+        - name: WORDPRESS_DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config-efrain
+              key: dbname
+        - name: WORDPRESS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-pass-efrain
+              key: password
+        ports:
+        - containerPort: 80
+          name: wordpressefrain
+        volumeMounts:
+        - name: wordpress-persistent-storage-efrain
+          mountPath: /var/www/html
+      volumes:
+      - name: wordpress-persistent-storage-efrain
+        persistentVolumeClaim:
+          claimName: efs-claim-efrain
